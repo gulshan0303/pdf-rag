@@ -1,24 +1,18 @@
-import os
-
-from dotenv import load_dotenv
-from google import genai
+from app.services.embedding_service import EmbeddingService
 
 
-load_dotenv()
+service = EmbeddingService()
 
-client = genai.Client(
-    api_key=os.getenv("GEMINI_API_KEY")
-)
+text = """
+2. Hiring Process
 
-model = os.getenv("EMBEDDING_MODEL")
+Initial Screening
+Task Assignment
+Final Evaluation
+Offer Discussion
+"""
 
-response = client.models.embed_content(
-    model=model,
-    contents="Employees get 18 annual leaves."
-)
-print(response)
-embedding = response.embeddings[0].values
+embedding = service.embed_text(text)
 
-print("Model:", model)
 print("Dimension:", len(embedding))
 print("First 5 values:", embedding[:5])

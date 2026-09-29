@@ -16,35 +16,21 @@ def clean_text(text: str) -> str:
 
     return text.strip()
 
-
 def is_heading(text: str) -> bool:
-    """
-    Heuristic heading detection.
-
-    Examples:
-    1. Introduction
-    2. Hiring Process
-    5. Probation Policy
-    Principles
-    """
     text = text.strip()
 
     if not text:
         return False
 
-    # Numbered heading: "1. Introduction", "2. Hiring Process"
-    if re.match(r"^\d+\.\s+.{2,100}$", text):
+    # Numbered heading
+    if re.match(r"^\d+\.\s+[A-Za-z].{1,100}$", text):
         return True
 
-    # Short title-like line
-    if len(text) <= 80 and not text.endswith((".", ":", ";")):
-        words = text.split()
-
-        if 1 <= len(words) <= 8:
-            return True
+    # Known document-style heading
+    if text.endswith(":") and len(text) <= 80:
+        return True
 
     return False
-
 
 def split_sentences(text: str) -> list[str]:
     """Basic sentence splitter."""
@@ -161,6 +147,41 @@ def get_sentence_overlap(
 
     return " ".join(overlap)
 
+def split_into_sections(text: str) -> list[dict]:
+    lines = [
+        line.strip()
+        for line in text.splitlines()
+        if line.strip()
+    ]
+
+    sections = []
+
+    current_heading = None
+    current_lines = []
+
+    for line in lines:
+
+        if is_heading(line):
+
+            if current_lines:
+                sections.append({
+                    "heading": current_heading,
+                    "content": "\n".join(current_lines),
+                })
+
+            current_heading = line
+            current_lines = []
+
+        else:
+            current_lines.append(line)
+
+    if current_lines:
+        sections.append({
+            "heading": current_heading,
+            "content": "\n".join(current_lines),
+        })
+
+    return sections
 
 def chunk_page(
     text: str,
@@ -289,3 +310,54 @@ def remove_repeated_lines(
         )
 
     return cleaned_pages    
+
+def chunk_section(
+    heading: str | None,
+    content: str,
+    page_number: int,
+    chunk_size: int = 1500,
+) -> list[dict]:
+
+    prefix = f"{heading}\n" if heading else ""
+
+    text = clean_text(content)
+
+    sentences = split_sentences(text)
+
+    chunks = []
+    current = prefix
+
+    for sentence in sentences:
+
+        proposed = (
+            current
+            + (" " if current else "")
+            + sentence
+        )
+
+        if len(proposed) <= chunk_size:
+            current = proposed
+
+        else:
+            if current.strip():
+                chunks.append(current.strip())
+
+            current = (
+                f"{heading}\n"
+                if heading
+                else ""
+            )
+
+            current += sentence
+
+    if current.strip():
+        chunks.append(current.strip())
+
+    return [
+        {
+            "content": chunk,
+            "page_number": page_number,
+            "section": heading,
+        }
+        for chunk in chunks
+    ]    

@@ -1,18 +1,24 @@
+from app.services.ingestion_service import IngestionService
 from app.services.embedding_service import EmbeddingService
 
 
-service = EmbeddingService()
+ingestion_service = IngestionService()
+embedding_service = EmbeddingService()
 
-text = """
-2. Hiring Process
+chunks = ingestion_service.process_pdf("sample.pdf")
 
-Initial Screening
-Task Assignment
-Final Evaluation
-Offer Discussion
-"""
+print("Total chunks:", len(chunks))
 
-embedding = service.embed_text(text)
+for index, chunk in enumerate(chunks[:3]):
 
-print("Dimension:", len(embedding))
-print("First 5 values:", embedding[:5])
+    embedding = embedding_service.embed_text(
+        chunk["content"]
+    )
+
+    print("\n-----------------------------")
+    print("Chunk:", index)
+    print("Page:", chunk["page_number"])
+    print("Section:", chunk["section"])
+    print("Text:", chunk["content"][:200])
+    print("Embedding dimension:", len(embedding))
+    print("First 5 values:", embedding[:5])

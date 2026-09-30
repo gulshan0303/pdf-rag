@@ -1,12 +1,21 @@
+from app.database.connection import SessionLocal
 from app.services.ingestion_service import IngestionService
 
 
-service = IngestionService()
+db = SessionLocal()
 
-pages = service.extract_pages("sample.pdf")
+try:
+    service = IngestionService(db)
 
-print("Total pages:", len(pages))
+    document = service.ingest(
+        pdf_path="sample.pdf",
+        filename="sample.pdf",
+        title="Limelight HR Policy",
+    )
 
-for page in pages:
-    print("\n--- PAGE", page["page_number"], "---")
-    print(page["text"][:500])
+    print("Document ID:", document.id)
+    print("Status:", document.status)
+    print("Total pages:", document.total_pages)
+
+finally:
+    db.close()
